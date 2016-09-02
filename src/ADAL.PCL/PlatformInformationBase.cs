@@ -53,12 +53,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         public virtual string GetBrokerAppName()
         {
-            return "Authenticator App";
+            return null;
         }
 
         public virtual string GetBrokerVersion()
         {
-            return "2";
+            return null;
         }
 
         public virtual string GetAssemblyFileVersionAttribute()

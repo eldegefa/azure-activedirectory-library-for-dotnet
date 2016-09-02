@@ -1501,39 +1501,31 @@ namespace Test.ADAL.NET.Unit
         public void TelemetryDefaultDispatcher()
         {
             Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry telemetry =
-            Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
+Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
             Assert.IsNotNull(telemetry);
 
-            string requestIDOne = telemetry.RegisterNewRequest();
-            Assert.IsNotNull(requestIDOne);
-
-            telemetry.StartEvent(requestIDOne, "acquire_token");
-            string requestIDTwo = telemetry.RegisterNewRequest();
-            Assert.AreEqual(telemetry.EventsStored(), 1);
-
-            DefaultEvent testDefaultEvent = new DefaultEvent("random_event");
-            Assert.IsNotNull(DefaultEvent.ApplicationName);
-            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
-
             DispatcherImplement dispatcher = new DispatcherImplement();
-            telemetry.RegisterDispatcher(dispatcher,true);
+            telemetry.RegisterDispatcher(dispatcher, true);
             dispatcher.clear();
-
             string requestIDThree = telemetry.RegisterNewRequest();
             telemetry.StartEvent(requestIDThree, "event_3");
-            telemetry.StopEvent(requestIDThree,testDefaultEvent,"event_3");
-            Assert.AreEqual(dispatcher.Count,1);
-            //dispatcher.file();
+            DefaultEvent testDefaultEvent3 = new DefaultEvent("event_3");
+            Assert.IsNotNull(DefaultEvent.ApplicationName);
+            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
+            telemetry.StopEvent(requestIDThree, testDefaultEvent3, "event_3");
 
-            telemetry.StartEvent(requestIDTwo, "cache_lookup");
-            DefaultEvent cacheDefaultEvent = new DefaultEvent("cache_lookup");
-            telemetry.StopEvent(requestIDTwo, cacheDefaultEvent, "cache_lookup");
-            Assert.AreEqual(dispatcher.Count,2);
+            telemetry.StartEvent(requestIDThree, "event_4");
+            DefaultEvent testDefaultEvent4 = new DefaultEvent("event_4");
+            Assert.IsNotNull(DefaultEvent.ApplicationName);
+            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
+            telemetry.StopEvent(requestIDThree, testDefaultEvent4, "event_4");
 
-            string requestIDFour = telemetry.RegisterNewRequest();
-            telemetry.StartEvent(requestIDFour, EventConstants.Crypto);
-            DefaultEvent cryptoDefaultEvent = new DefaultEvent(EventConstants.Crypto);
-            telemetry.StopEvent(requestIDFour, cacheDefaultEvent, EventConstants.Crypto);
+            telemetry.StartEvent(requestIDThree, "event_5");
+            DefaultEvent testDefaultEvent5 = new DefaultEvent("event_5");
+            Assert.IsNotNull(DefaultEvent.ApplicationName);
+            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
+            telemetry.StopEvent(requestIDThree, testDefaultEvent5, "event_5");
+            telemetry.flush(requestIDThree);
             Assert.AreEqual(dispatcher.Count, 3);
 
             dispatcher.file();
@@ -1599,7 +1591,7 @@ Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
 
         class DispatcherImplement : IDispatcher
         {
-            private readonly List<List<Tuple<string,string>>> storeList = new List<List<Tuple<string, string>>>();
+            private readonly List<List<Tuple<string, string>>> storeList = new List<List<Tuple<string, string>>>();
 
             void IDispatcher.Dispatch(List<Tuple<string, string>> Event)
             {

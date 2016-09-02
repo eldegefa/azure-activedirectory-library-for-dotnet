@@ -30,34 +30,38 @@ using System.Security;
 
 namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
-    internal class APIEvent : DefaultEvent
+    internal class ApiEvent : DefaultEvent
     {
-        internal APIEvent(Authenticator authenticator) : base(EventConstants.GrantEvent)
+        internal ApiEvent(Authenticator authenticator, UserInfo userinfo, string tenantId) : base(EventConstants.GrantEvent)
         {
-            //Fill in default parameters
-            Tenant = IdTokenClaim.TenantId;
+            Tenant = PlatformPlugin.CryptographyHelper.CreateSha256Hash(tenantId);
             SetEvent(EventConstants.Tenant, Tenant);
 
-            Issuer = IdTokenClaim.Issuer;
-            SetEvent(EventConstants.Issuer, Issuer);
-
-            Idp = IdTokenClaim.IdentityProvider;
+            Idp = userinfo.IdentityProvider;
             SetEvent(EventConstants.Idp, Idp);
 
-            Upn = IdTokenClaim.UPN;
-            SetEvent(EventConstants.Upn, Upn);
+            if (userinfo.PasswordExpiresOn != null)
+            {
+                SetEvent(EventConstants.PasswordExpiration, PasswordExpiration.ToString());
+            }
 
-            Email = IdTokenClaim.Email;
-            SetEvent(EventConstants.Email, Email);
+            if (userinfo.PasswordChangeUrl != null)
+            {
+                PasswordChangeUrl = userinfo.PasswordChangeUrl;
+                SetEvent(EventConstants.PasswordChangeUrl, PasswordChangeUrl.ToString());
+            }
 
-            PasswordExpiration = IdTokenClaim.PasswordExpiration;
-            SetEvent(EventConstants.PasswordExpiration, PasswordExpiration);
-
-            PasswordChangeUrl = IdTokenClaim.PasswordChangeUrl;
-            SetEvent(EventConstants.PasswordChangeUrl, PasswordChangeUrl);
-
-            FamilyName = IdTokenClaim.FamilyName;
+            FamilyName = userinfo.FamilyName;
             SetEvent(EventConstants.FamilyName, FamilyName);
+
+            GivenName = userinfo.GivenName;
+            SetEvent(EventConstants.GivenName,GivenName);
+
+            DisplayableId = PlatformPlugin.CryptographyHelper.CreateSha256Hash(userinfo.DisplayableId);
+            SetEvent(EventConstants.DisplayableId, DisplayableId);
+
+            UniqueId = PlatformPlugin.CryptographyHelper.CreateSha256Hash(userinfo.UniqueId);
+            SetEvent(EventConstants.UniqueId, UniqueId);
 
             Authority = authenticator.Authority;
             SetEvent(EventConstants.Authority,Authority);
@@ -88,9 +92,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
             ValidateAuthority = authenticator.ValidateAuthority.ToString();
             SetEvent(EventConstants.ValidateAuthority,ValidateAuthority);
-
-            RequestId = authenticator.RequestId.ToString();
-            SetEvent(EventConstants.RequestId,RequestId);
         }
 
         internal override void SetEvent(string eventName, string eventParameter)
@@ -110,9 +111,9 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         internal string Email { get; set; }
 
-        internal string PasswordExpiration { get; set; }
+        internal DateTimeOffset? PasswordExpiration { get; set; }
 
-        internal string PasswordChangeUrl { get; set; }
+        internal Uri PasswordChangeUrl { get; set; }
 
         internal string FamilyName { get; set; }
 
@@ -139,6 +140,14 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         internal string UpdateFromTemplateAsync { get; set; }
 
         internal string UpdateTenantId { get; set; }
+
+        internal string DisplayableId { get; set; }
+
+        internal string GivenName { get; set; }
+
+        internal string IdentityProvider { get; set; }
+
+        internal string UniqueId { get; set; }
     }
 }
 

@@ -27,6 +27,8 @@
 
 using System;
 using System.ComponentModel;
+using System.Management;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
@@ -81,7 +83,13 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         public override string GetDeviceId()
         {
-            return DeviceID.GetDeviceID();
+            string DeviceId = "";
+            ManagementObjectSearcher MOS = new ManagementObjectSearcher("SELECT DeviceID FROM Win32_Processor");
+            foreach (ManagementObject MO in MOS.Get())
+            {
+                DeviceId = MO["DeviceID"].ToString();
+            }
+            return DeviceId;
         }
 
         public override string GetDeviceModel()
@@ -92,7 +100,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         public override string GetApplicationName()
         {
-            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            return Assembly.GetEntryAssembly().GetName().Name;
         }
 
         public override string GetApplicationVersion()

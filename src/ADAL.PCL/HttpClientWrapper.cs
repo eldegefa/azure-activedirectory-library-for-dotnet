@@ -107,7 +107,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                         }
                         else
                         {
-                            content = new FormUrlEncodedContent(((DictionaryRequestParameters)this.BodyParameters).ToList());
+                            content =
+                                new FormUrlEncodedContent(((DictionaryRequestParameters) this.BodyParameters).ToList());
                         }
 
                         requestMessage.Method = HttpMethod.Post;
@@ -117,25 +118,33 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                     {
                         requestMessage.Method = HttpMethod.Get;
                     }
-                    httpEvent.UserAgent=client.DefaultRequestHeaders.UserAgent.ToString();
-                    httpEvent.RequestApiVersion = requestMessage.Version.ToString();
+                    httpEvent.SetEvent(EventConstants.UserAgent, client.DefaultRequestHeaders.UserAgent.ToString());
+                    httpEvent.SetEvent(EventConstants.RequestApiVersion, requestMessage.Version.ToString());
                     if (this.BodyParameters != null)
                     {
-                        httpEvent.HttpBodyParameters = this.BodyParameters.ToString();
+                        httpEvent.SetEvent(EventConstants.HttpBodyParameters,
+                            PlatformPlugin.CryptographyHelper.CreateSha256Hash(this.BodyParameters.ToString()));
                     }
                     httpEvent.HttpResponseMethod = requestMessage.Method.ToString();
-                    Telemetry.GetInstance().StartEvent(this.CallState.RequestId.ToString(),httpEvent.eventName);
+                    Telemetry.GetInstance().StartEvent(this.CallState.RequestId, EventConstants.HttpEvent);
 
                     responseMessage = await client.SendAsync(requestMessage).ConfigureAwait(false);
 
                     httpEvent.HttpResponseCode = responseMessage.StatusCode.ToString();
                     httpEvent.SetUrl = requestMessage.RequestUri.ToString();
-                    httpEvent.HttpQueryParameters = PlatformPlugin.CryptographyHelper.CreateSha256Hash(requestMessage.RequestUri.Query);
-                    Telemetry.GetInstance().StopEvent(this.CallState.RequestId.ToString(),httpEvent,httpEvent.eventName);
+                    httpEvent.HttpQueryParameters =
+                        PlatformPlugin.CryptographyHelper.CreateSha256Hash(requestMessage.RequestUri.Query);
+                    httpEvent.SetEvent("HttpQueryParameters",
+                        PlatformPlugin.CryptographyHelper.CreateSha256Hash(requestMessage.RequestUri.Query));
                 }
                 catch (TaskCanceledException ex)
                 {
                     throw new HttpRequestWrapperException(null, ex);
+                }
+
+                finally
+                {
+                    Telemetry.GetInstance().StopEvent(this.CallState.RequestId, httpEvent, EventConstants.HttpEvent);
                 }
 
                 IHttpWebResponse webResponse = await CreateResponseAsync(responseMessage).ConfigureAwait(false);

@@ -31,7 +31,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
     internal class CallState
     {
-        public CallState(Guid correlationId,Guid requestId)
+        public CallState(Guid correlationId,string requestId)
         {
             this.CorrelationId = correlationId;
             this.RequestId = requestId;
@@ -39,7 +39,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         public Guid CorrelationId { get; set; }
 
-        public Guid RequestId { get; set; }
+        public string RequestId { get; set; }
 
         public AuthorityType AuthorityType { get; internal set; }
     }

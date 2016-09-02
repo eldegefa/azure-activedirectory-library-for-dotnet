@@ -54,6 +54,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
@@ -83,7 +84,6 @@
     </Compile>
     <Compile Include="BrokerHelper.cs" />
     <Compile Include="DeviceAuthHelper.cs" />
-    <Compile Include="DeviceID.cs" />
     <Compile Include="Native\BCryptNative.cs" />
     <Compile Include="Native\ICngAlgorithm.cs" />
     <Compile Include="Native\ICngAsymmetricAlgorithm.cs" />

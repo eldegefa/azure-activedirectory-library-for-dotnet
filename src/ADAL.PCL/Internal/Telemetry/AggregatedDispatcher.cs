@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
@@ -70,7 +71,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
             }
            else
             {
-                PlatformPlugin.Logger.Warning(null, "Dispatcher implementation is not provided");
+                return;
             }
         }
 

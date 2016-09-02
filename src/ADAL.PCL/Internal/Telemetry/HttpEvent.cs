@@ -25,39 +25,40 @@
 //
 //------------------------------------------------------------------------------
 
-
-using System.Collections.Concurrent;
+using System;
 using System.Collections.Generic;
-
+using System.Linq;
+using System.ServiceModel;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
-    internal class DefaultDispatcher
+    internal class HttpEvent : DefaultEvent
     {
-        internal IDictionary<string, List<EventsBase>> ObjectsToBeDispatched = new ConcurrentDictionary<string, List<EventsBase>>();
-
-        internal IDispatcher Dispatcher ;
-
-        internal DefaultDispatcher(IDispatcher dispatcher)
+        internal HttpEvent() : base(EventConstants.HttpEvent)
         {
-            Dispatcher = dispatcher;
+            SetEvent(EventConstants.EventName,"http_event");
         }
 
-        internal virtual void Flush(string requestId)
-        {
-               
-        }
+        internal string SetUrl { get; set; }
 
-        internal virtual void Receive(string requestId, EventsBase eventsInterface)
-        {
-            if (Dispatcher != null)
-            {
-                Dispatcher.Dispatch(eventsInterface.GetEvents());
-            }
-            else
-            {
-                PlatformPlugin.Logger.Warning(null, "Dispatcher implementation is not provided");
-            }
-        }
+        internal string UserAgent { get; set; }
+
+        internal string HttpMethod { get; set; }
+
+        internal string HttpPath { get; set; }
+
+        internal string HttpResponseCode { get; set; }
+
+        internal string HttpQueryParameters { get; set; }
+
+        internal string HttpResponseMethod { get; set; }
+
+        internal string RequestApiVersion { get; set; }
+
+        internal string ResponseApiVersion { get; set; }
+
+        internal string HttpBodyParameters { get; set; }
     }
 }

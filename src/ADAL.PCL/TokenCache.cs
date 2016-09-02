@@ -345,7 +345,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         {
             lock (cacheLock)
             {
-                CacheEvent cacheEvent = new CacheEvent("cache_lookup");
+                CacheEvent cacheEvent = new CacheEvent(EventConstants.CacheLookUp);
                 Telemetry.GetInstance().StartEvent(callState.RequestId.ToString(), "cache_lookup");
                 PlatformPlugin.Logger.Verbose(callState, "Looking up cache for a token...");
 
@@ -354,7 +354,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
                 if (kvp.HasValue)
                 {
-                    cacheEvent.TokenFound = true.ToString();
+                    cacheEvent.SetEvent(EventConstants.TokenFound, true);
                     TokenCacheKey cacheKey = kvp.Value.Key;
                     resultEx = kvp.Value.Value.Clone();
 
@@ -373,7 +373,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                         resultEx.Result.AccessToken = null;
                         PlatformPlugin.Logger.Information(callState,
                             "Cross Tenant refresh token was found in the cache");
-                        cacheEvent.IsCrossTenantRt = true.ToString();
+                        cacheEvent.SetEvent(EventConstants.IsCrossTenantRt, "true");
                     }
                     else if (tokenNearExpiry && !cacheQueryData.ExtendedLifeTimeEnabled)
                     {
@@ -383,7 +383,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                     }
                     else if (!cacheKey.ResourceEquals(cacheQueryData.Resource))
                     {
-                        cacheEvent.IsMultipleResourceRt = true.ToString();
+                        cacheEvent.SetEvent(EventConstants.IsMultipleResourceRt, "true");
                         PlatformPlugin.Logger.Information(callState,
                             string.Format(CultureInfo.CurrentCulture,
                                 "Multi resource refresh token for resource '{0}' will be used to acquire token for '{1}'",
@@ -401,7 +401,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                     }
                     else if (!tokenExtendedLifeTimeExpired && cacheQueryData.ExtendedLifeTimeEnabled && tokenNearExpiry)
                     {
-                        cacheEvent.ExtendedLifeTimeEnabled = true.ToString();
+                        cacheEvent.SetEvent(EventConstants.ExtendedLifeTimeEnabled, "true");
                         resultEx.Result.ExtendedLifeTimeToken = true;
                         resultEx.Result.ExpiresOn = resultEx.Result.ExtendedExpiresOn;
                         PlatformPlugin.Logger.Information(callState,
@@ -409,7 +409,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                     }
                     else if (tokenExtendedLifeTimeExpired)
                     {
-                        cacheEvent.ExpiredAt = true.ToString();
+                        cacheEvent.SetEvent(EventConstants.ExpiredAt, "true");
                         resultEx.Result.AccessToken = null;
                         PlatformPlugin.Logger.Information(callState,
                             "The AT has expired its ExtendedLifeTime");
@@ -438,8 +438,9 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 else
                 {
                     PlatformPlugin.Logger.Information(callState, "No matching token was found in the cache");
+                    cacheEvent.SetEvent(EventConstants.TokenFound, "false");
                 }
-                Telemetry.GetInstance().StopEvent(callState.RequestId.ToString(), cacheEvent, "cache_lookup");
+                Telemetry.GetInstance().StopEvent(callState.RequestId, cacheEvent, "cache_lookup");
                 return resultEx;
             }
         }

@@ -87,7 +87,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         public override string GetDeviceId()
         {
             var deviceInformation = new Windows.Security.ExchangeActiveSyncProvisioning.EasClientDeviceInformation();
-            return deviceInformation.SystemSku;
+            return deviceInformation.Id.ToString();
         }
 
         public override async Task<bool> IsUserLocalAsync(CallState callState)

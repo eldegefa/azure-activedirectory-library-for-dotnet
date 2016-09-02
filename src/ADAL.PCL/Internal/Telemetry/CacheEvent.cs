@@ -33,36 +33,42 @@ using System.Threading.Tasks;
 
 namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
-    internal class HttpEvent : DefaultEvent
+    internal class CacheEvent : DefaultEvent
     {
-        internal HttpEvent() : base(EventConstants.HttpEvent)
+        internal CacheEvent(string eventName) : base(EventConstants.CacheEvent)
         {
-            
+            //Fill in the default parameters
+            this.EventName = eventName;
         }
 
-        internal void SetQueryParameters(string input)
+        internal string EventName { get; set; }
+
+        internal string IsMultipleResourceRt { get; set; }
+
+        internal string TokenFound { get; set; }
+
+        internal string TokenNearExpiry { get; set; }
+
+        internal string TokenExtendedLifeTimeExpired { get; set; }
+
+        internal string IsCrossTenantRt { get; set; }
+
+        internal string TokenExpired { get; set; }
+
+        internal string ExtendedLifeTimeEnabled { get; set; }
+
+        internal string ExpiredAt { get; set; }
+
+        internal string TokenSubjectType { get; set; }
+
+        internal override void SetEvent(string eventName, string eventParameter)
         {
-            //Will store the query parameters as string 
+            DefaultEvents.Add(new Tuple<string, string>(eventName, eventParameter));
         }
 
-        internal string SetUrl { get; set; }
-
-        internal string UserAgent { get; set; }
-
-        internal string HttpMethod { get; set; }
-
-        internal string HttpPath { get; set; }
-
-        internal string HttpResponseCode { get; set; }
-
-        internal string HttpQueryParameters { get; set; }
-
-        internal string HttpResponseMethod { get; set; }
-
-        internal string RequestApiVersion { get; set; }
-
-        internal string ResponseApiVersion { get; set; }
-
-        internal string HttpBodyParameters { get; set; }
+        internal void SetEvent(string eventName, bool eventParameter)
+        {
+            DefaultEvents.Add(new Tuple<string, string>(eventName, eventParameter.ToString()));
+        }
     }
 }

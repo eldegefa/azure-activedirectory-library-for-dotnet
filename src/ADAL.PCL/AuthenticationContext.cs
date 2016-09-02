@@ -163,12 +163,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<DeviceCodeResult> AcquireDeviceCodeAsync(string resource, string clientId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "DeviceCodeHandlerAPI");
-            DeviceCodeResult result = await this.AcquireDeviceCodeAsync(resource, clientId, null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "DeviceCodehandlerAPI");
-            return result;
+            return await this.AcquireDeviceCodeAsync(resource, clientId, null).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -180,12 +175,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<DeviceCodeResult> AcquireDeviceCodeAsync(string resource, string clientId, string extraQueryParameters)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "DeviceCodeAPI");
-            var handler = new AcquireDeviceCodeHandler(this.Authenticator, resource, clientId, extraQueryParameters,this.Authenticator.RequestId);
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "606");
+            var handler = new AcquireDeviceCodeHandler(this.Authenticator, resource, clientId, extraQueryParameters,requestId);
             DeviceCodeResult result = await handler.RunHandlerAsync().ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "DeviceCodeAPI");
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, null, null);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "606");
             return result;
         }
 
@@ -197,26 +192,26 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByDeviceCodeAsync(DeviceCodeResult deviceCodeResult)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "DeviceCodeResultAPI");
-            if (deviceCodeResult == null)
-            {
-                throw new ArgumentNullException("deviceCodeResult");
-            }
-
             RequestData requestData = new RequestData
             {
                 Authenticator = this.Authenticator,
                 TokenCache = this.TokenCache,
                 ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
                 Resource = deviceCodeResult.Resource,
-                ClientKey = new ClientKey(deviceCodeResult.ClientId)
+                ClientKey = new ClientKey(deviceCodeResult.ClientId),
+                RequestId = Telemetry.GetInstance().RegisterNewRequest()
             };
+
+            Telemetry.GetInstance().StartEvent(requestData.RequestId, "611");
+            if (deviceCodeResult == null)
+            {
+                throw new ArgumentNullException("deviceCodeResult");
+            }
 
             var handler = new AcquireTokenByDeviceCodeHandler(requestData, deviceCodeResult);
             AuthenticationResult result = await handler.RunAsync().ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "DeviceCodeResultAPI");
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo ,result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestData.RequestId, apiEvent, "611");
             return result;
         }
 
@@ -229,11 +224,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time. Refresh Token property will be null for this overload.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, string clientId, UserAssertion userAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenCommonAPI");
-            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, userAssertion).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenCommonAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "700");
+            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, userAssertion, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "700");
             return result;
         }
 
@@ -245,11 +240,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time. Refresh Token property will be null for this overload.</returns>        
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, ClientCredential clientCredential)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenClientCredentialAPI");
-            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientCredential)).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenClientCredentialAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "706");
+            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientCredential), requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "706");
             return result;
         }
 
@@ -261,11 +256,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time. Refresh Token property will be null for this overload.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, IClientAssertionCertificate clientCertificate)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenClientCredentialAPI");
-            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator)).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenClientCredentialAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "711");
+            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator), requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "711");
             return result;
         }
 
@@ -277,11 +272,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time. Refresh Token property will be null for this overload.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, ClientAssertion clientAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenClientAssertionAPI");
-            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientAssertion)).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenClientAssertionAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "716");
+            AuthenticationResult result = await this.AcquireTokenForClientCommonAsync(resource, new ClientKey(clientAssertion), requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "716");
             return result;
         }
 
@@ -295,11 +290,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, ClientCredential clientCredential)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCredential), null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "800");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCredential), null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "800");
             return result;
         }
 
@@ -314,11 +309,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, ClientCredential clientCredential, string resource)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCredential), resource).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "806");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCredential), resource, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "806");
             return result;
         }
 
@@ -332,11 +327,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, ClientAssertion clientAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientAssertion), null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "811");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientAssertion), null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "811");
             return result;
         }
 
@@ -351,11 +346,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, ClientAssertion clientAssertion, string resource)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientAssertion), resource).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "816");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientAssertion), resource, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "816");
             return result;
         }
 
@@ -369,11 +364,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, IClientAssertionCertificate clientCertificate)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCertificate, this.Authenticator), null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "821");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCertificate, this.Authenticator), null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "821");
             return result;
         }
 
@@ -388,11 +383,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeAsync(string authorizationCode, Uri redirectUri, IClientAssertionCertificate clientCertificate, string resource)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenAuthorizationCodeAPI");
-            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCertificate, this.Authenticator), resource).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenAuthorizationCodeAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "826");
+            AuthenticationResult result = await this.AcquireTokenByAuthorizationCodeCommonAsync(authorizationCode, redirectUri, new ClientKey(clientCertificate, this.Authenticator), resource, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "826");
             return result;
         }
 
@@ -405,11 +400,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, ClientCredential clientCredential, UserAssertion userAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenOnBehalfAPI");
-            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientCredential), userAssertion).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenOnBehalfAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "500");
+            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientCredential), userAssertion, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "500");
             return result;
         }
 
@@ -422,11 +417,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, IClientAssertionCertificate clientCertificate, UserAssertion userAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenOnBehalfAPI");
-            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator), userAssertion).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenOnBehalfAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "506");
+            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator), userAssertion, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "506");
             return result;
         }
 
@@ -439,11 +434,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, ClientAssertion clientAssertion, UserAssertion userAssertion)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenOnBehalfAPI");
-            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientAssertion), userAssertion).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenOnBehalfAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "511");
+            AuthenticationResult result = await this.AcquireTokenOnBehalfCommonAsync(resource, new ClientKey(clientAssertion), userAssertion, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "511");
             return result;
         }
 
@@ -455,11 +450,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, string clientId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
             AuthenticationResult result = await this.AcquireTokenSilentAsync(resource, clientId, UserIdentifier.AnyUser).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenOnBehalfAPI");
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
             return result;
         }
 
@@ -472,11 +464,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, string clientId, UserIdentifier userId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
-            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientId), userId, null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenSilentAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "3");
+            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientId), userId, null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "3");
             return result;
         }
 
@@ -490,11 +483,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, string clientId, UserIdentifier userId, IPlatformParameters parameters)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
-            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientId), userId, parameters).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenSilentAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "9");
+            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientId), userId, parameters, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "9");
             return result;
         }
 
@@ -507,11 +501,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, ClientCredential clientCredential, UserIdentifier userId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
-            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientCredential), userId, null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenSilentAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "10");
+            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientCredential), userId, null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "10");
             return result;
         }
 
@@ -524,11 +518,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, IClientAssertionCertificate clientCertificate, UserIdentifier userId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
-            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator), userId, null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenSilentAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "11");
+            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientCertificate, this.Authenticator), userId, null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "11");
             return result;
         }
 
@@ -541,11 +536,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time. If acquiring token without user credential is not possible, the method throws AdalException.</returns>
         public async Task<AuthenticationResult> AcquireTokenSilentAsync(string resource, ClientAssertion clientAssertion, UserIdentifier userId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenSilentAPI");
-            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientAssertion), userId, null).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenSilentAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "12");
+            AuthenticationResult result = await this.AcquireTokenSilentCommonAsync(resource, new ClientKey(clientAssertion), userId, null, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "12");
             return result;
         }
 
@@ -582,11 +578,11 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, string clientId, Uri redirectUri, IPlatformParameters parameters)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenInteractiveAPI");
-            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, UserIdentifier.AnyUser).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenInteractiveAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "140");
+            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, UserIdentifier.AnyUser, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "140");
             return result;
         }
 
@@ -602,11 +598,12 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, string clientId, Uri redirectUri, IPlatformParameters parameters, UserIdentifier userId)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenInteractiveAPI");
-            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, userId).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenInteractiveAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "146");
+            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, userId, requestId).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "146");
             return result;
         }
 
@@ -623,17 +620,17 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// <returns>It contains Access Token, Refresh Token and the Access Token's expiration time.</returns>
         public async Task<AuthenticationResult> AcquireTokenAsync(string resource, string clientId, Uri redirectUri, IPlatformParameters parameters, UserIdentifier userId, string extraQueryParameters)
         {
-            this.Authenticator.RequestId = Guid.NewGuid();
-            Telemetry.GetInstance().StartEvent(this.Authenticator.RequestId.ToString(), "AcquireTokenInteractiveAPI");
-            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, userId, extraQueryParameters).ConfigureAwait(false);
-            APIEvent apiEvent = new APIEvent(this.Authenticator);
-            Telemetry.GetInstance().StopEvent(this.Authenticator.RequestId.ToString(), apiEvent, "AcquireTokenInteractiveAPI");
+            string requestId = Telemetry.GetInstance().RegisterNewRequest();
+            Telemetry.GetInstance().StartEvent(requestId, "151");
+            AuthenticationResult result = await this.AcquireTokenCommonAsync(resource, clientId, redirectUri, parameters, userId, requestId,extraQueryParameters).ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.SetEvent(EventConstants.LoginHint, PlatformPlugin.CryptographyHelper.CreateSha256Hash(userId.Id));
+            Telemetry.GetInstance().StopEvent(requestId, apiEvent, "151");
             return result;
         }
 
-        private async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeCommonAsync(string authorizationCode, Uri redirectUri, ClientKey clientKey, string resource)
+        private async Task<AuthenticationResult> AcquireTokenByAuthorizationCodeCommonAsync(string authorizationCode, Uri redirectUri, ClientKey clientKey, string resource, string requestId)
         {
-            
             const string nullResource = "null_resource_as_optional";
             RequestData requestData = new RequestData
             {
@@ -641,7 +638,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 TokenCache = this.TokenCache,
                 Resource = resource,
                 ClientKey = clientKey,
-                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled
+                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
+                RequestId = requestId
             };
             if (requestData.Resource == null)
             {
@@ -651,7 +649,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
             return await handler.RunAsync().ConfigureAwait(false);
         }
 
-        private async Task<AuthenticationResult> AcquireTokenForClientCommonAsync(string resource, ClientKey clientKey)
+        private async Task<AuthenticationResult> AcquireTokenForClientCommonAsync(string resource, ClientKey clientKey, string requestId)
         {
             RequestData requestData = new RequestData
             {
@@ -660,13 +658,14 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 Resource = resource,
                 ClientKey = clientKey,
                 ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
-                SubjectType = TokenSubjectType.Client
+                SubjectType = TokenSubjectType.Client,
+                RequestId = requestId
             };
             var handler = new AcquireTokenForClientHandler(requestData);
             return await handler.RunAsync().ConfigureAwait(false);
         }
 
-        private async Task<AuthenticationResult> AcquireTokenOnBehalfCommonAsync(string resource, ClientKey clientKey, UserAssertion userAssertion)
+        private async Task<AuthenticationResult> AcquireTokenOnBehalfCommonAsync(string resource, ClientKey clientKey, UserAssertion userAssertion, string requestId)
         {
             RequestData requestData = new RequestData
             {
@@ -674,7 +673,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 TokenCache = this.TokenCache,
                 Resource = resource,
                 ClientKey = clientKey,
-                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled
+                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
+                RequestId = requestId
             };
 
             var handler = new AcquireTokenOnBehalfHandler(requestData, userAssertion);
@@ -694,13 +694,19 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 TokenCache = this.TokenCache,
                 Resource = resource,
                 ClientKey = new ClientKey(clientId),
-                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled
+                ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
+                RequestId = Telemetry.GetInstance().RegisterNewRequest(),
             };
+            Telemetry.GetInstance().StartEvent(requestData.RequestId, "721");
             var handler = new AcquireTokenNonInteractiveHandler(requestData, userCredential);
-            return await handler.RunAsync().ConfigureAwait(false);
+            AuthenticationResult result = await handler.RunAsync().ConfigureAwait(false);
+            ApiEvent apiEvent = new ApiEvent(this.Authenticator, result.UserInfo, result.TenantId);
+            apiEvent.CorrelationId = this.Authenticator.CorrelationId.ToString();
+            Telemetry.GetInstance().StopEvent(requestData.RequestId, apiEvent, "721");
+            return result;
         }
 
-        private async Task<AuthenticationResult> AcquireTokenCommonAsync(string resource, string clientId, UserAssertion userAssertion)
+        private async Task<AuthenticationResult> AcquireTokenCommonAsync(string resource, string clientId, UserAssertion userAssertion, string requestId)
         {
             RequestData requestData = new RequestData
             {
@@ -709,12 +715,13 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 Resource = resource,
                 ClientKey = new ClientKey(clientId),
                 ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
+                RequestId = requestId
             };
             var handler = new AcquireTokenNonInteractiveHandler(requestData, userAssertion);
             return await handler.RunAsync().ConfigureAwait(false);
         }
         
-        private async Task<AuthenticationResult> AcquireTokenCommonAsync(string resource, string clientId, Uri redirectUri, IPlatformParameters parameters, UserIdentifier userId, string extraQueryParameters = null)
+        private async Task<AuthenticationResult> AcquireTokenCommonAsync(string resource, string clientId, Uri redirectUri, IPlatformParameters parameters, UserIdentifier userId, string requestId,string extraQueryParameters = null)
         {
             RequestData requestData = new RequestData
             {
@@ -723,12 +730,13 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 Resource = resource,
                 ClientKey = new ClientKey(clientId),
                 ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
+                RequestId = requestId
             };
             var handler = new AcquireTokenInteractiveHandler(requestData, redirectUri, parameters, userId, extraQueryParameters, this.CreateWebAuthenticationDialog(parameters));
             return await handler.RunAsync().ConfigureAwait(false);
         }
 
-        private async Task<AuthenticationResult> AcquireTokenSilentCommonAsync(string resource, ClientKey clientKey, UserIdentifier userId, IPlatformParameters parameters)
+        private async Task<AuthenticationResult> AcquireTokenSilentCommonAsync(string resource, ClientKey clientKey, UserIdentifier userId, IPlatformParameters parameters, string requestId)
         {
             RequestData requestData = new RequestData
             {
@@ -736,7 +744,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 TokenCache = this.TokenCache,
                 Resource = resource,
                 ExtendedLifeTimeEnabled = this.ExtendedLifeTimeEnabled,
-                ClientKey = clientKey
+                ClientKey = clientKey,
+                RequestId = requestId
             };
 
             var handler = new AcquireTokenSilentHandler(requestData, userId, parameters);

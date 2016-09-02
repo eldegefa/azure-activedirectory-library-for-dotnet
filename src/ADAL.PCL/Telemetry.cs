@@ -65,32 +65,40 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
             }
             else
             {
-                //TODO :- Throw Dispatcher is null exception
+                return;
             }
         }
 
         internal void StartEvent(string requestId, string eventName)
         {
+            if (Dispatcher == null)
+            {
+                return;
+            }
             if (! EventTracking.ContainsKey(new Tuple<string, string>(requestId, eventName)))
             {
-                EventTracking.Add(new Tuple<string, string>(requestId, eventName), DateTime.UtcNow.ToString());
+                EventTracking.Add(new Tuple<string, string>(requestId, eventName), DateTime.Now.ToString());
             }
         }
 
         internal void StopEvent(string requestId, EventsBase Event,string eventName)
         {
+            if (Dispatcher == null)
+            {
+                return;
+            }
             string value;
             List<Tuple<string, string>> listEvent = Event.GetEvents();
             if (EventTracking.
                 TryGetValue(new Tuple<string, string>(requestId, eventName), out value))
             {
-                DateTime startTime = DateTimeOffset.Parse(value).UtcDateTime;
-                DateTime stopTime = DateTime.UtcNow;
+                DateTime startTime = DateTime.Parse(value);
+                DateTime stopTime = DateTime.Now;
 
                 listEvent.Add(new Tuple<string, string>(EventConstants.StartTime, startTime.ToString(format)));
                 listEvent.Add(new Tuple<string, string>(EventConstants.StopTime, stopTime.ToString(format)));
 
-                System.TimeSpan diff1 = startTime.Subtract(stopTime);
+                System.TimeSpan diff1 = stopTime.Subtract(startTime);
                 //Add the response time to the list
                 listEvent.Add(new Tuple<string, string>(EventConstants.ResponseTime,diff1.ToString()));
                 //Adding event name to the start of the list
@@ -104,9 +112,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         internal void DispatchEventNow(string requestId, EventsBase Event,string eventName)
         {
-            EventTracking.Remove(new Tuple<string, string>(requestId, eventName));
-            List<Tuple<string, string>> listEvent = Event.GetEvents();
-            Dispatcher.Receive(requestId,Event);
         }
 
         internal int EventsStored()

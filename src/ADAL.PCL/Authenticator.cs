@@ -79,8 +79,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         public Guid CorrelationId { get; set; }
 
-        public Guid RequestId { get; set; }
-
         public async Task UpdateFromTemplateAsync(CallState callState)
         {
             if (!this.updatedFromTemplate)
@@ -89,7 +87,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 string host = authorityUri.Authority;
                 string path = authorityUri.AbsolutePath.Substring(1);
                 string tenant = path.Substring(0, path.IndexOf("/", StringComparison.Ordinal));
-                RequestId = callState.RequestId;
 
                 AuthenticatorTemplate matchingTemplate = await AuthenticatorTemplateList.FindMatchingItemAsync(this.ValidateAuthority, host, tenant, callState).ConfigureAwait(false);
 

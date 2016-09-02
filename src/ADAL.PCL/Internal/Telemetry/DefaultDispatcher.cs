@@ -25,40 +25,39 @@
 //
 //------------------------------------------------------------------------------
 
-using System;
+
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 {
-    internal class CacheEvent : DefaultEvent
+    internal class DefaultDispatcher
     {
-        internal CacheEvent(string eventName) : base(EventConstants.CacheEvent)
+        internal IDictionary<string, List<EventsBase>> ObjectsToBeDispatched = new ConcurrentDictionary<string, List<EventsBase>>();
+
+        internal IDispatcher Dispatcher ;
+
+        internal DefaultDispatcher(IDispatcher dispatcher)
         {
-            //Fill in the default parameters
-            this.EventName = eventName;
+            Dispatcher = dispatcher;
         }
 
-        internal string EventName { get; set; }
+        internal virtual void Flush(string requestId)
+        {
+               
+        }
 
-        internal string IsMultipleResourceRt { get; set; }
-
-        internal string TokenFound { get; set; }
-
-        internal string TokenNearExpiry { get; set; }
-
-        internal string TokenExtendedLifeTimeExpired { get; set; }
-
-        internal string IsCrossTenantRt { get; set; }
-
-        internal string TokenExpired { get; set; }
-
-        internal string ExtendedLifeTimeEnabled { get; set; }
-
-        internal string ExpiredAt { get; set; }
-
-        internal string TokenSubjectType { get; set; }
+        internal virtual void Receive(string requestId, EventsBase eventsInterface)
+        {
+            if (Dispatcher != null)
+            {
+                Dispatcher.Dispatch(eventsInterface.GetEvents());
+            }
+            else
+            {
+                return;
+            }
+        }
     }
 }

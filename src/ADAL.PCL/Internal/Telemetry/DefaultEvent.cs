@@ -45,7 +45,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
             SdkId = AdalIdHelper.GetAssemblyFileVersion();
 
-            DeviceId = PlatformPlugin.CryptographyHelper.CreateSha256Hash(PlatformPlugin.PlatformInformation.GetDeviceModel());
+            DeviceId = PlatformPlugin.CryptographyHelper.CreateSha256Hash(PlatformPlugin.PlatformInformation.GetDeviceId());
         }
 
         internal DefaultEvent(string eventName)
@@ -68,7 +68,10 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
 
         internal override void SetEvent(string eventName, string eventParameter)
         {
-            DefaultEvents.Add(new Tuple<string, string>(eventName, eventParameter));
+            if (eventParameter != null)
+            {
+                DefaultEvents.Add(new Tuple<string, string>(eventName, eventParameter));
+            }
         }
 
         internal override List<Tuple<string, string>> GetEvents()
