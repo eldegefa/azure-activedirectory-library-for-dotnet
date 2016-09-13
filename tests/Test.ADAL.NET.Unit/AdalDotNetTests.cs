@@ -1538,6 +1538,58 @@ Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
         }
 
         [TestMethod]
+        [Description("Test case for checking CacheEvent")]
+        public void TelemetryCacheEvent()
+        {
+            Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry telemetry =
+Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
+            Assert.IsNotNull(telemetry);
+
+            DispatcherImplement dispatcher = new DispatcherImplement();
+            telemetry.RegisterDispatcher(dispatcher, false);
+            dispatcher.clear();
+            string requestIDThree = telemetry.RegisterNewRequest();
+            telemetry.StartEvent(requestIDThree, "cache_lookup");
+            CacheEvent testDefaultEvent = new CacheEvent("cache_lookup");
+            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
+            telemetry.StopEvent(requestIDThree, testDefaultEvent, "cache_lookup");
+            telemetry.flush(requestIDThree);
+            Assert.AreEqual(dispatcher.Count, 1);
+
+            bool result = dispatcher.Cachefile();
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        [Description("Test case for checking APIEvent")]
+        public void TelemetryApiEvent()
+        {
+            Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry telemetry =
+Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
+            Assert.IsNotNull(telemetry);
+
+            DispatcherImplement dispatcher = new DispatcherImplement();
+            telemetry.RegisterDispatcher(dispatcher, false);
+            dispatcher.clear();
+            string requestIDThree = telemetry.RegisterNewRequest();
+            telemetry.StartEvent(requestIDThree, "api_event");
+            Authenticator authenticator = new Authenticator(TestConstants.DefaultAuthorityCommonTenant, true);
+            UserInfo userinfo = new UserInfo();
+            userinfo.UniqueId = "uniqueid";
+            userinfo.DisplayableId = "displayableid";
+            ApiEvent testDefaultEvent = new ApiEvent(authenticator, userinfo, "tenantId", "3");
+            Assert.IsNotNull(DefaultEvent.ApplicationVersion);
+            telemetry.StopEvent(requestIDThree, testDefaultEvent, "cache_lookup");
+            telemetry.flush(requestIDThree);
+            Assert.AreEqual(dispatcher.Count, 1);
+
+            bool result = dispatcher.Apifile();
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
         [Description("Telemetry tests Aggregate Dispatcher for a single event in requestID")]
         public void TelemetryAggregateDispatcherSingleEventRequestID()
         {
@@ -1622,6 +1674,90 @@ Microsoft.IdentityModel.Clients.ActiveDirectory.Telemetry.GetInstance();
                         }
                     }
                 }
+            }
+
+            public bool Cachefile()
+            {
+                HashSet<string> Cacheitems = new HashSet<string>();
+                Cacheitems.Add("event_name");
+                Cacheitems.Add("application_name");
+                Cacheitems.Add("application_version");
+                Cacheitems.Add("x-client-version");
+                Cacheitems.Add("x-client-sku");
+                Cacheitems.Add("device_id");
+                Cacheitems.Add("correlation_id");
+                Cacheitems.Add("start_time");
+                Cacheitems.Add("end_time");
+                Cacheitems.Add("response_time");
+                Cacheitems.Add("request_id");
+
+                using (TextWriter tw = new StreamWriter("C:/Users/abgun/test.txt"))
+                {
+                    foreach (List<Tuple<string, string>> list in storeList)
+                    {
+                        foreach (Tuple<string, string> tuple in list)
+                        {
+                            if (Cacheitems.Contains(tuple.Item1) && tuple.Item2 != null && tuple.Item2.Length > 0)
+                            {
+                                tw.WriteLine(tuple.Item1 + " " + tuple.Item2 + "\r\n");
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+
+            public bool Apifile()
+            {
+                HashSet<string> Apiitems = new HashSet<string>();
+                Apiitems.Add("event_name");
+                Apiitems.Add("application_name");
+                Apiitems.Add("application_version");
+                Apiitems.Add("x-client-version");
+                Apiitems.Add("x-client-sku");
+                Apiitems.Add("device_id");
+                Apiitems.Add("correlation_id");
+                Apiitems.Add("start_time");
+                Apiitems.Add("end_time");
+                Apiitems.Add("response_time");
+                Apiitems.Add("request_id");
+                Apiitems.Add("is_deprecated");
+                Apiitems.Add("idp");
+                Apiitems.Add("displayable_id");
+                Apiitems.Add("unique_id");
+                Apiitems.Add("authority");
+                Apiitems.Add("authority_type");
+                Apiitems.Add("is_deprecated");
+                Apiitems.Add("validation_status");
+                Apiitems.Add("extended_expires_on_setting");
+                Apiitems.Add("is_successful");
+                Apiitems.Add("user_id");
+                Apiitems.Add("tenant_id");
+                Apiitems.Add("idp");
+                Apiitems.Add("login_hint");
+
+                using (TextWriter tw = new StreamWriter("C:/Users/abgun/test.txt"))
+                {
+                    foreach (List<Tuple<string, string>> list in storeList)
+                    {
+                        foreach (Tuple<string, string> tuple in list)
+                        {
+                            if (Apiitems.Contains(tuple.Item1) && tuple.Item2 != null && tuple.Item2.Length > 0)
+                            {
+                                tw.WriteLine(tuple.Item1 + " " + tuple.Item2 + "\r\n");
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
             }
         }
     }
